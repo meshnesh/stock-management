@@ -1,0 +1,11 @@
+.idea
+.DS_Store
+.vscode
+*.pyc
+*.pyc
+__pycache__/
+.cache/
+logfile
+
+# dotenv
+.env
