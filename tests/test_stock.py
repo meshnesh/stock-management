@@ -69,47 +69,52 @@ class StockTestCase(unittest.TestCase):
         self.assertEqual(stock_creation.status_code, 201)
         self.assertIn('Polo', str(stock_creation.data))
 
-    # def test_api_can_get_all_stocks(self):
-    #     """Test API can get a stock (GET request)."""
-    #     self.stock_creation()
-    #     res = self.client().get('/stocks/')
-    #     self.assertEqual(res.status_code, 200)
-    #     self.assertIn('Polo', str(res.data))
+    def test_api_can_get_all_stocks(self):
+        """Test API can get a stock (GET request)."""
+        access_token = self.get_access_token()
 
-    # def test_api_can_get_stock_by_id(self):
-    #     """Test API can get a single stockItem by using it's id."""
-    #     stock_creation = self.stock_creation()
-    #     result_in_json = json.loads(stock_creation.data.decode('utf-8').replace("'", "\""))
-    #     result = self.client().get(
-    #         '/stocks/{}'.format(result_in_json['id']))
-    #     self.assertEqual(result.status_code, 200)
-    #     self.assertIn('Polo', str(result.data))
+        self.stock_creation()
+        res = self.client().get(
+            '/stocks/',
+            headers=dict(Authorization="Bearer " + access_token),
+        )
+        self.assertEqual(res.status_code, 200)
+        self.assertIn('Polo', str(res.data))
 
-    # def test_stockItem_can_be_edited(self):
-    #     """Test API can edit an existing stockItem. (PUT request)"""
-    #     stock_creation = self.stock_creation()
-    #     result_in_json = json.loads(stock_creation.data.decode('utf-8').replace("'", "\""))
-    #     rv = self.client().put(
-    #         '/stocks/1',
-    #         data={
-    #             "name": "Blue Shirts",
-    #             'price': 2500,
-    #             'stockNo': 150,
-    #             'description': 'Made from the silks of south'
-    #         })
-    #     self.assertEqual(rv.status_code, 200)
-    #     results = self.client().get('/stocks/1')
-    #     self.assertIn('Blue Shirts', str(results.data))
+    def test_api_can_get_stock_by_id(self):
+        """Test API can get a single stockItem by using it's id."""
+        stock_creation = self.stock_creation()
+        result_in_json = json.loads(stock_creation.data.decode('utf-8').replace("'", "\""))
+        result = self.client().get(
+            '/stocks/{}'.format(result_in_json['id']))
+        self.assertEqual(result.status_code, 200)
+        self.assertIn('Polo', str(result.data))
 
-    # def test_stocks_deletion(self):
-    #     """Test API can delete an existing stockItem. (DELETE request)."""
-    #     stock_creation = self.stock_creation()
-    #     result_in_json = json.loads(stock_creation.data.decode('utf-8').replace("'", "\""))
-    #     res = self.client().delete('/stocks/1')
-    #     self.assertEqual(res.status_code, 200)
-    #     # Test to see if it exists, should return a 404
-    #     result = self.client().get('/stocks/1')
-    #     self.assertEqual(result.status_code, 404)
+    def test_stockItem_can_be_edited(self):
+        """Test API can edit an existing stockItem. (PUT request)"""
+        stock_creation = self.stock_creation()
+        result_in_json = json.loads(stock_creation.data.decode('utf-8').replace("'", "\""))
+        rv = self.client().put(
+            '/stocks/1',
+            data={
+                "name": "Blue Shirts",
+                'price': 2500,
+                'stockNo': 150,
+                'description': 'Made from the silks of south'
+            })
+        self.assertEqual(rv.status_code, 200)
+        results = self.client().get('/stocks/1')
+        self.assertIn('Blue Shirts', str(results.data))
+
+    def test_stocks_deletion(self):
+        """Test API can delete an existing stockItem. (DELETE request)."""
+        stock_creation = self.stock_creation()
+        result_in_json = json.loads(stock_creation.data.decode('utf-8').replace("'", "\""))
+        res = self.client().delete('/stocks/1')
+        self.assertEqual(res.status_code, 200)
+        # Test to see if it exists, should return a 404
+        result = self.client().get('/stocks/1')
+        self.assertEqual(result.status_code, 404)
 
     def tearDown(self):
         """teardown all initialized variables."""

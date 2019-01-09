@@ -102,7 +102,7 @@ class Stocks(db.Model):
         db.session.commit()
 
     @staticmethod
-    def get_all():
+    def get_all(user_id):
         return Stocks.query.filter_by(created_by=user_id)
 
     def delete(self):
