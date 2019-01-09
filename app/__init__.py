@@ -90,52 +90,61 @@ def create_app(config_name):
 
     @app.route('/stocks/<int:id>', methods=['GET', 'PUT', 'DELETE'])
     def stockItem_manipulation(id, **kwargs):
-     # retrieve a stockItem using it's ID
-        stock = Stocks.query.filter_by(id=id).first()
-        if not stock:
-            # Raise an HTTPException with a 404 not found status code
-            abort(404)
+        # get the access token
+        auth_header = request.headers.get('Authorization')
+        access_token = auth_header.split(" ")[1]
 
-        if request.method == 'DELETE':
-            stock.delete()
-            return {
-            "message": "StockItem {} deleted successfully".format(stock.id) 
-         }, 200
+        if access_token:
+            user_id = User.decode_token(access_token)
+            
+            if not isinstance(user_id, str):
 
-        elif request.method == 'PUT':
-            name = str(request.data.get('name', ''))
-            price = str(request.data.get('price', ))
-            stockNo = str(request.data.get('stockNo', ))
-            description = str(request.data.get('description', ))
-            stock.name = name
-            stock.price = price
-            stock.stockNo = stockNo
-            stock.description = description
-            stock.save()
-            response = jsonify({
-                'id': stock.id,
-                'name': stock.name,
-                'price': stock.price,
-                'stockNo': stock.stockNo,
-                'description': stock.description,
-                'date_created': stock.date_created,
-                'date_modified': stock.date_modified
-            })
-            response.status_code = 200
-            return response
-        else:
-            # GET
-            response = jsonify({
-                'id': stock.id,
-                'name': stock.name,
-                'price': stock.price,
-                'stockNo': stock.stockNo,
-                'description': stock.description,
-                'date_created': stock.date_created,
-                'date_modified': stock.date_modified
-            })
-            response.status_code = 200
-            return response
+                # retrieve a stockItem using it's ID
+                stock = Stocks.query.filter_by(id=id).first()
+                if not stock:
+                    # Raise an HTTPException with a 404 not found status code
+                    abort(404)
+
+                if request.method == 'DELETE':
+                    stock.delete()
+                    return {
+                    "message": "StockItem {} deleted successfully".format(stock.id) 
+                }, 200
+
+                elif request.method == 'PUT':
+                    name = str(request.data.get('name', ''))
+                    price = str(request.data.get('price', ))
+                    stockNo = str(request.data.get('stockNo', ))
+                    description = str(request.data.get('description', ))
+                    stock.name = name
+                    stock.price = price
+                    stock.stockNo = stockNo
+                    stock.description = description
+                    stock.save()
+                    response = jsonify({
+                        'id': stock.id,
+                        'name': stock.name,
+                        'price': stock.price,
+                        'stockNo': stock.stockNo,
+                        'description': stock.description,
+                        'date_created': stock.date_created,
+                        'date_modified': stock.date_modified
+                    })
+                    response.status_code = 200
+                    return response
+                else:
+                    # GET
+                    response = jsonify({
+                        'id': stock.id,
+                        'name': stock.name,
+                        'price': stock.price,
+                        'stockNo': stock.stockNo,
+                        'description': stock.description,
+                        'date_created': stock.date_created,
+                        'date_modified': stock.date_modified
+                    })
+                    response.status_code = 200
+                    return response
 
     # import the authentication blueprint and register it on the app
     from .auth import auth_blueprint
