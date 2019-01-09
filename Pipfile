@@ -13,6 +13,8 @@ flask-migrate = "*"
 flask-api = "*"
 python-dotenv = "*"
 flask-script = "*"
+flask-bcrypt = "*"
+pyjwt = "*"
 
 [requires]
 python_version = "3.7"

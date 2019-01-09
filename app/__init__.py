@@ -6,16 +6,23 @@ from flask_sqlalchemy import SQLAlchemy
 # local import
 from instance.config import app_config
 
-from flask import request, jsonify, abort
+# For password hashing
+from flask_bcrypt import Bcrypt
+
+from flask import request, jsonify, abort, make_response
 
 # initialize sql-alchemy
 db = SQLAlchemy()
 
 
 def create_app(config_name):
-    from app.models import Stocks
+    from app.models import Stocks, User
 
     app = FlaskAPI(__name__, instance_relative_config=True)
+
+    # overriding Werkzeugs built-in password hashing utilities using Bcrypt.
+    bcrypt = Bcrypt(app)
+
     app.config.from_object(app_config[config_name])
     app.config.from_pyfile('config.py')
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
@@ -23,44 +30,63 @@ def create_app(config_name):
 
     @app.route('/stocks/', methods=['POST', 'GET'])
     def stocks():
-        if request.method == "POST":
-            name = str(request.data.get('name', ''))
-            price = str(request.data.get('price', ))
-            stockNo = str(request.data.get('stockNo', ))
-            description = str(request.data.get('description', ))
-            if name:
-                stock = Stocks(name=name, price=price, stockNo=stockNo, description=description)
-                stock.save()
-                response = jsonify({
-                    'id': stock.id,
-                    'name': stock.name,
-                    'price': stock.price,
-                    'stockNo': stock.stockNo,
-                    'description': stock.description,
-                    'date_created': stock.date_created,
-                    'date_modified': stock.date_modified
-                })
-                response.status_code = 201
-                return response
-        else:
-            # GET
-            stocks = Stocks.get_all()
-            results = []
+        # get the access token
+        auth_header = request.headers.get('Authorization')
+        access_token = auth_header.split(" ")[1]
 
-            for stock in stocks:
-                obj = {
-                    'id': stock.id,
-                    'name': stock.name,
-                    'price': stock.price,
-                    'stockNo': stock.stockNo,
-                    'description' : stock.description,
-                    'date_created': stock.date_created,
-                    'date_modified': stock.date_modified
-                }
-                results.append(obj)
-            response = jsonify(results)
-            response.status_code = 200
-            return response
+        if access_token:
+            user_id = User.decode_token(access_token)
+            
+            if not isinstance(user_id, str):
+                # Go ahead and handle the request, the user is authed
+                if request.method == "POST":
+                    name = str(request.data.get('name', ''))
+                    price = str(request.data.get('price', ''))
+                    stockNo = str(request.data.get('stockNo', ''))
+                    description = str(request.data.get('description', ''))
+
+                    if name:
+                        stock = Stocks(
+                            name=name, price=price,
+                            stockNo=stockNo, description=description, created_by=user_id)
+                        stock.save()
+                        response = jsonify({
+                            'id': stock.id,
+                            'name': stock.name,
+                            'price': stock.price,
+                            'stockNo': stock.stockNo,
+                            'date_created': stock.date_created,
+                            'date_modified': stock.date_modified,
+                            'created_by': user_id
+                        })
+
+                        return make_response(response), 201
+
+                # GET
+                # get all the bucketlists for this user
+                stocks = Stocks.get_all(user_id)
+                results = []
+
+                for stock in stocks:
+                    obj = {
+                        'id': stock.id,
+                        'name': stock.name,
+                        'price': stock.price,
+                        'stockNo': stock.stockNo,
+                        'date_created': stock.date_created,
+                        'date_modified': stock.date_modified,
+                        'created_by': stock.created_by
+                    }
+                    results.append(obj)
+
+                return make_response(jsonify(results)), 200
+
+            # user is not legit, so the payload is an error message
+            message = user_id
+            response = {
+                'message': message
+            }
+            return make_response(jsonify(response)), 401
 
     @app.route('/stocks/<int:id>', methods=['GET', 'PUT', 'DELETE'])
     def stockItem_manipulation(id, **kwargs):
@@ -110,5 +136,9 @@ def create_app(config_name):
             })
             response.status_code = 200
             return response
+
+    # import the authentication blueprint and register it on the app
+    from .auth import auth_blueprint
+    app.register_blueprint(auth_blueprint)
 
     return app
